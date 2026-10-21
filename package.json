@@ -3,11 +3,23 @@
   "version": "1.0.0",
   "description": "Claude Code skill and Node.js CLI that checks Pipedrive leads before the first outreach: identity, company, name, casing, duplicates, phone and WhatsApp. Read-only audit, then one approved plan.",
   "main": "src/audit.js",
-  "bin": { "pipedrive-lead-qa": "bin/pipedrive-lead-qa.js" },
-  "scripts": { "test": "node --test tests/*.test.js" },
-  "engines": { "node": ">=18" },
+  "bin": {
+    "pipedrive-lead-qa": "bin/pipedrive-lead-qa.js"
+  },
+  "scripts": {
+    "test": "node --test tests/*.test.js",
+    "demo": "node examples/demo.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
   "license": "MIT",
   "author": "Felipe Sore",
-  "repository": { "type": "git", "url": "https://github.com/felipe-sore/pipedrive-lead-qa" },
-  "dependencies": { "libphonenumber-js": "^1.11.0" }
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/felipe-sore/pipedrive-lead-qa"
+  },
+  "dependencies": {
+    "libphonenumber-js": "^1.11.0"
+  }
 }
