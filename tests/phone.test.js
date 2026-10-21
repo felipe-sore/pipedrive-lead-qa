@@ -22,9 +22,10 @@ test('categorize against the home country', () => {
 });
 
 test('BR repair: rebuilds candidates from a wrong country code, with and without the 9th digit', () => {
-  const list = candidates('+1 31 98765-4321', table).map((x) => x.e164);
-  assert.ok(list.includes('+553198765432'), JSON.stringify(candidates('+1 31 98765-4321', table)));
-  assert.ok(list.includes('+5531998765432'));
+  const list = candidates('+1 31 8765-4321', table).map((x) => x.e164);
+  assert.ok(list.includes('+553187654321'), JSON.stringify(list)); // as typed (landline shape)
+  assert.ok(list.includes('+5531987654321'), JSON.stringify(list)); // with the 9th digit added
+  assert.ok(candidates('+1 31 98765-4321', table).some((x) => x.e164 === '+5531987654321'));
   assert.deepEqual(candidates('+1 20 98765-4321', table), []); // 20 is not a Brazilian area code
 });
 
@@ -37,7 +38,7 @@ test('state from free-text location', () => {
 });
 
 test('repair is accepted only when WhatsApp and the location agree', async () => {
-  const wa = async (e) => (e === '+5531998765432' ? 'on_whatsapp' : 'not_on_whatsapp');
+  const wa = async (e) => (e === '+5531987654321' ? 'on_whatsapp' : 'not_on_whatsapp');
   assert.equal((await tryRepair('+1 31 98765-4321', 'Belo Horizonte', table, wa)).status, 'confirmed');
   assert.equal((await tryRepair('+1 31 98765-4321', 'Recife, PE', table, wa)).status, 'found_location_mismatch');
   assert.equal((await tryRepair('+1 31 98765-4321', '', table, wa)).status, 'found_location_unknown');

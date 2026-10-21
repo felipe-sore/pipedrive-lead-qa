@@ -49,7 +49,7 @@ function seed() {
 }
 
 // WhatsApp gateway stub: numbers listed here exist.
-const ON_WHATSAPP = new Set(['+5511987654321', '+5521998765432', '+5531998765432', '+5551991234567', '+5531988887777']);
+const ON_WHATSAPP = new Set(['+5511987654321', '+5521998765432', '+5531987654321', '+5551991234567', '+5531988887777']);
 const hasWhatsApp = async (e164) => (ON_WHATSAPP.has(e164) ? 'on_whatsapp' : 'not_on_whatsapp');
 
 module.exports = { seed, L, LABEL_A, LABEL_B, hasWhatsApp };

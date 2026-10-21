@@ -58,7 +58,7 @@ test('audit: every check lands where it should', async () => {
   assert.deepEqual(r.plan.actions.find((a) => a.leadId === L(2)).set, { name: 'Bruno Lima dos Santos', first_name: 'Bruno', last_name: 'Lima dos Santos' });
 
   assert.deepEqual(actionsFor(r, 3).sort(), ['fix_org_name', 'fix_phone']);
-  assert.equal(r.plan.actions.find((a) => a.type === 'fix_phone').set.phone, '+5531998765432');
+  assert.equal(r.plan.actions.find((a) => a.type === 'fix_phone').set.phone, '+5531987654321');
 
   assert.equal(rec(r, 4).findings.identity, 'mismatch');
   assert.deepEqual(actionsFor(r, 4), []); // blocked until a human decides
@@ -117,7 +117,7 @@ test('apply --execute: fresh activities, deletes, task, fixes; never completes a
   const lead5 = fake.db.activities.filter((a) => a.lead_id === L(5));
   assert.deepEqual(lead5.map((a) => a.subject).sort(), ['Get Phone Number', 'WhatsApp Message Follow-up']);
   assert.equal(fake.db.persons.find((p) => p.id === 102).name, 'Bruno Lima dos Santos');
-  assert.equal(fake.db.persons.find((p) => p.id === 103).phone[0].value, '+5531998765432');
+  assert.equal(fake.db.persons.find((p) => p.id === 103).phone[0].value, '+5531987654321');
   assert.equal(fake.db.orgs.find((o) => o.id === 3).name, 'Globex Industrial');
 });
 
