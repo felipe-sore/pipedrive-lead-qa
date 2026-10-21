@@ -23,7 +23,7 @@ test('categorize against the home country', () => {
 
 test('BR repair: rebuilds candidates from a wrong country code, with and without the 9th digit', () => {
   const list = candidates('+1 31 98765-4321', table).map((x) => x.e164);
-  assert.ok(list.includes('+553198765432'));
+  assert.ok(list.includes('+553198765432'), JSON.stringify(candidates('+1 31 98765-4321', table)));
   assert.ok(list.includes('+5531998765432'));
   assert.deepEqual(candidates('+1 20 98765-4321', table), []); // 20 is not a Brazilian area code
 });
