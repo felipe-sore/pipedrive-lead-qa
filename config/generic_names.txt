@@ -1,0 +1,37 @@
+# Values that show up in a person's name field but are not a name
+# (scraped data often puts a department or a mailbox there).
+hr
+rh
+it
+ti
+finance
+financeiro
+finanzas
+sales
+comercial
+ventas
+recruiting
+recruitment
+recrutamento
+reclutamiento
+contact
+contato
+contacto
+admin
+management
+diretoria
+direccion
+support
+suporte
+soporte
+atendimento
+purchasing
+compras
+legal
+juridico
+marketing
+team
+unknown
+test
+n/a
+na

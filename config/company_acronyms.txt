@@ -1,0 +1,16 @@
+# Tokens always written in upper case in a company name.
+# Any OTHER short all-caps token (4 letters or less) is sent to a human:
+# "TGA" is an acronym, "VEJA" is a word, and no rule can tell them apart.
+s.a.
+sa
+ltda
+me
+epp
+eireli
+mei
+ti
+rh
+llc
+plc
+ag
+bv
