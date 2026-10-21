@@ -1,0 +1,63 @@
+{
+  "generatedAt": "2026-10-21T12:00:00.000Z",
+  "note": "Review this plan. Delete any action you do not approve, then run: apply <plan.json> --execute",
+  "actions": [
+    {
+      "type": "fix_person_name",
+      "leadId": "aaaaaaaa-0000-0000-0000-000000000002",
+      "personId": 102,
+      "label": "Bruno Lima lead",
+      "from": "BRUNO LIMA DOS SANTOS",
+      "set": {
+        "name": "Bruno Lima dos Santos",
+        "first_name": "Bruno",
+        "last_name": "Lima dos Santos"
+      }
+    },
+    {
+      "type": "fix_org_name",
+      "leadId": "aaaaaaaa-0000-0000-0000-000000000003",
+      "orgId": 3,
+      "label": "Carla Dias lead",
+      "from": "GLOBEX INDUSTRIAL",
+      "set": {
+        "name": "Globex Industrial"
+      }
+    },
+    {
+      "type": "fix_phone",
+      "leadId": "aaaaaaaa-0000-0000-0000-000000000003",
+      "personId": 103,
+      "label": "Carla Dias lead",
+      "from": "+1 31 98765-4321",
+      "set": {
+        "phone": "+5531987654321"
+      },
+      "why": "area code 31 matches MG"
+    },
+    {
+      "type": "replace_open_activities_with_task",
+      "leadId": "aaaaaaaa-0000-0000-0000-000000000005",
+      "personId": 105,
+      "label": "Elisa Prado lead",
+      "why": "no reliable phone (missing)",
+      "task": {
+        "subject": "Get Phone Number",
+        "type": "call",
+        "due_date": "2026-10-26"
+      }
+    },
+    {
+      "type": "replace_open_activities_with_task",
+      "leadId": "aaaaaaaa-0000-0000-0000-000000000009",
+      "personId": 109,
+      "label": "Hana Kato lead",
+      "why": "no reliable phone (home, WhatsApp not_on_whatsapp)",
+      "task": {
+        "subject": "Get Phone Number",
+        "type": "call",
+        "due_date": "2026-10-26"
+      }
+    }
+  ]
+}
