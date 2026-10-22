@@ -44,8 +44,10 @@ function candidates(raw, table) {
 //   - a name must match a whole part of the location ("Paraty" is not "Pará",
 //     "Ceará-Mirim" is not "Ceará"); only multi-word names like "São Paulo" are
 //     also found inside a longer text ("Greater São Paulo Area");
-//   - a state name beats a city name ("Campo Grande, Rio de Janeiro" is RJ);
-//   - two different states at the same level mean unknown, never a guess.
+//   - a whole part beats a name found inside text, a longer name beats one it
+//     contains ("Mato Grosso do Sul" is not also "Mato Grosso"), and a state
+//     name beats a city name ("Campo Grande, Rio de Janeiro" is RJ);
+//   - two different states left at the same level mean unknown, never a guess.
 function stateFromLocation(location, table) {
   const text = String(location || '');
   if (!text.trim()) return null;
@@ -53,12 +55,17 @@ function stateFromLocation(location, table) {
   const parts = text.split(/[,;/|()]|\s-\s/).map(words).filter(Boolean);
   const whole = ` ${words(text)} `;
   for (const level of ['state', 'city']) {
-    const found = new Set();
+    const exact = [];
+    const inside = [];
     for (const [uf, s] of Object.entries(table.states)) {
       for (const name of (level === 'state' ? [s.name] : s.cities).map(words)) {
-        if (parts.includes(name) || (name.includes(' ') && whole.includes(` ${name} `))) found.add(uf);
+        if (parts.includes(name)) exact.push([name, uf]);
+        else if (name.includes(' ') && whole.includes(` ${name} `)) inside.push([name, uf]);
       }
     }
+    const hits = exact.length ? exact : inside;
+    const kept = hits.filter(([n]) => !hits.some(([other]) => other !== n && ` ${other} `.includes(` ${n} `)));
+    const found = new Set(kept.map(([, uf]) => uf));
     if (found.size === 1) return [...found][0];
     if (found.size > 1) return null;
   }

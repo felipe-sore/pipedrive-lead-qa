@@ -51,6 +51,8 @@ test('state: multi-word names inside a longer text, state beats city, conflicts 
   assert.equal(stateFromLocation('Campo Grande, Rio de Janeiro', table), 'RJ');
   assert.equal(stateFromLocation('Bahia, Pernambuco', table), null);
   assert.equal(stateFromLocation('Natal, Recife', table), null);
+  assert.equal(stateFromLocation('Greater Mato Grosso do Sul region', table), 'MS');
+  assert.equal(stateFromLocation('Mato Grosso', table), 'MT');
 });
 
 test('a wrongly read state can no longer confirm a repair', async () => {
