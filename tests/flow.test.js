@@ -228,3 +228,12 @@ test('pagination stops on a cursor that does not advance', async () => {
   const pd = new Pipedrive({ token: 't', fetchImpl: stuck, sleep: async () => {} });
   await assert.rejects(pd.paginate('/v1/leads'), /next_start/);
 });
+
+test('audit: the same phone typed two ways is caught as a duplicate', async () => {
+  const data = seed();
+  data.persons.find((p) => p.id === 109).phone = [{ value: '(11) 98765-4321', primary: true }]; // Ana's number, without +55
+  const r = await runAudit(makeFake(data));
+  assert.match(rec(r, 9).findings.duplicate, /same phone/);
+  assert.match(rec(r, 1).findings.duplicate, /same phone/);
+  assert.deepEqual(actionsFor(r, 9), []);
+});

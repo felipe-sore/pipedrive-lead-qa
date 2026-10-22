@@ -83,7 +83,9 @@ function findDuplicates(records) {
       if (!byPerson.has(r.person.id)) byPerson.set(r.person.id, []);
       byPerson.get(r.person.id).push(r.lead.id);
     }
-    const digits = String(r.phoneRaw || '').replace(/\D/g, '');
+    // The normalized number when there is one: "+55 21 99876-5432" and
+    // "(21) 99876-5432" are the same phone.
+    const digits = String(r.phoneKey || r.phoneRaw || '').replace(/\D/g, '');
     if (digits.length >= 8) {
       if (!byPhone.has(digits)) byPhone.set(digits, []);
       byPhone.get(digits).push(r.lead.id);

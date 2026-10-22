@@ -37,6 +37,28 @@ test('state from free-text location', () => {
   assert.equal(stateFromLocation('Remote', table), null);
 });
 
+test('state: a name inside another place name is not that state', () => {
+  for (const place of ['Paraty', 'Paracatu', 'Pará de Minas', 'Ceará-Mirim', 'Bahia Blanca', 'Acrelândia']) {
+    assert.equal(stateFromLocation(place, table), null, place);
+  }
+  assert.equal(stateFromLocation('Pará', table), 'PA');
+  assert.equal(stateFromLocation('Belém, Pará, Brazil', table), 'PA');
+  assert.equal(stateFromLocation('Paraty - RJ', table), 'RJ');
+});
+
+test('state: multi-word names inside a longer text, state beats city, conflicts are unknown', () => {
+  assert.equal(stateFromLocation('Greater São Paulo Area', table), 'SP');
+  assert.equal(stateFromLocation('Campo Grande, Rio de Janeiro', table), 'RJ');
+  assert.equal(stateFromLocation('Bahia, Pernambuco', table), null);
+  assert.equal(stateFromLocation('Natal, Recife', table), null);
+});
+
+test('a wrongly read state can no longer confirm a repair', async () => {
+  const wa = async (e) => (e === '+5591987654321' ? 'on_whatsapp' : 'not_on_whatsapp');
+  // A Pará (91) number for someone in Paraty (RJ) used to be confirmed.
+  assert.equal((await tryRepair('+1 91 98765-4321', 'Paraty', table, wa)).status, 'found_location_unknown');
+});
+
 test('repair is accepted only when WhatsApp and the location agree', async () => {
   const wa = async (e) => (e === '+5531987654321' ? 'on_whatsapp' : 'not_on_whatsapp');
   assert.equal((await tryRepair('+1 31 98765-4321', 'Belo Horizonte', table, wa)).status, 'confirmed');

@@ -14,7 +14,7 @@
 // Another country can follow the same shape with its own area code table.
 
 const { parsePhoneNumberFromString } = require('libphonenumber-js');
-const { key } = require('./text');
+const { words } = require('./text');
 
 function candidates(raw, table) {
   const digits = String(raw || '').replace(/\D/g, '');
@@ -40,20 +40,29 @@ function candidates(raw, table) {
 }
 
 // Reads a state out of free text like "Belo Horizonte, Minas Gerais" or "Campinas - SP".
+// A wrong state is worse than none (it can confirm someone else's number), so:
+//   - a name must match a whole part of the location ("Paraty" is not "Pará",
+//     "Ceará-Mirim" is not "Ceará"); only multi-word names like "São Paulo" are
+//     also found inside a longer text ("Greater São Paulo Area");
+//   - a state name beats a city name ("Campo Grande, Rio de Janeiro" is RJ);
+//   - two different states at the same level mean unknown, never a guess.
 function stateFromLocation(location, table) {
   const text = String(location || '');
   if (!text.trim()) return null;
   for (const m of text.matchAll(/\b([A-Z]{2})\b/g)) if (table.states[m[1]]) return m[1];
-  const k = key(text);
-  // Longest names first, so "Mato Grosso do Sul" is not read as "Mato Grosso".
-  const names = [];
-  for (const [uf, s] of Object.entries(table.states)) {
-    names.push([key(s.name), uf, 0]);
-    for (const c of s.cities) names.push([key(c), uf, 1]);
+  const parts = text.split(/[,;/|()]|\s-\s/).map(words).filter(Boolean);
+  const whole = ` ${words(text)} `;
+  for (const level of ['state', 'city']) {
+    const found = new Set();
+    for (const [uf, s] of Object.entries(table.states)) {
+      for (const name of (level === 'state' ? [s.name] : s.cities).map(words)) {
+        if (parts.includes(name) || (name.includes(' ') && whole.includes(` ${name} `))) found.add(uf);
+      }
+    }
+    if (found.size === 1) return [...found][0];
+    if (found.size > 1) return null;
   }
-  names.sort((a, b) => a[2] - b[2] || b[0].length - a[0].length);
-  const hit = names.find(([n]) => k.includes(n));
-  return hit ? hit[1] : null;
+  return null;
 }
 
 async function tryRepair(raw, location, table, hasWhatsApp) {

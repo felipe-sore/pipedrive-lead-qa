@@ -40,7 +40,8 @@ async function audit(pd, leads, cfg, opts = {}, adapters = {}) {
 
   const records = leads.map((lead) => {
     const person = lead.person_id ? persons.get(lead.person_id) : null;
-    return { lead, person, phoneRaw: person ? primaryPhone(person) : '', review: [], findings: {}, actions: [] };
+    const phoneRaw = person ? primaryPhone(person) : '';
+    return { lead, person, phoneRaw, phoneKey: categorize(phoneRaw, home).e164, review: [], findings: {}, actions: [] };
   });
   const duplicates = checks.findDuplicates(records);
   const orgNames = new Map();
@@ -89,7 +90,10 @@ async function audit(pd, leads, cfg, opts = {}, adapters = {}) {
         const orgName = person.org_id.name || '';
         const oc = checks.orgNameCase(orgName, cfg);
         if (oc.ambiguous) review.push(`company "${orgName}": ${oc.ambiguous.join(', ')} may be an acronym, decide the casing`);
-        else if (oc.change && !orgsPlanned.has(person.org_id.value)) orgsPlanned.add(person.org_id.value), r.actions.push({ type: 'fix_org_name', leadId: lead.id, orgId: person.org_id.value, label, from: orgName, set: { name: oc.change } });
+        else if (oc.change && !orgsPlanned.has(person.org_id.value)) {
+          orgsPlanned.add(person.org_id.value);
+          r.actions.push({ type: 'fix_org_name', leadId: lead.id, orgId: person.org_id.value, label, from: orgName, set: { name: oc.change } });
+        }
       }
     }
 

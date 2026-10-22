@@ -57,3 +57,11 @@ test('duplicates: same person or same phone in one batch', () => {
   assert.match(dup.get('c'), /same phone/);
   assert.equal(dup.has('d'), false);
 });
+
+test('duplicates: the same phone written two ways is one phone', () => {
+  const recs = [
+    { lead: { id: 'a' }, person: { id: 1 }, phoneRaw: '+55 21 99876-5432', phoneKey: '+5521998765432' },
+    { lead: { id: 'b' }, person: { id: 2 }, phoneRaw: '(21) 99876-5432', phoneKey: '+5521998765432' },
+  ];
+  assert.match(c.findDuplicates(recs).get('b'), /same phone/);
+});
