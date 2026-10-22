@@ -151,3 +151,80 @@ test('lead updates use PATCH (PUT on a lead is a silent 404)', async () => {
   await pd.updateLead(L(1), { title: 'x' }).catch(() => {});
   assert.equal(fake.calls.at(-1).method, 'PATCH');
 });
+
+test('scope and apply see activities owned by other reps', async () => {
+  const s = seed();
+  s.activities.find((a) => a.id === 5).user_id = 2;
+  s.activities.find((a) => a.id === 20).user_id = 2;
+  const fake = makeFake(s);
+  const r = await runAudit(fake);
+  assert.ok(r.sc.leads.some((l) => l.id === L(5)));
+  await apply(client(fake, { readOnly: false }), r.plan, { execute: true });
+  assert.deepEqual(fake.db.activities.filter((a) => a.lead_id === L(5)).map((a) => a.subject), ['Get Phone Number']);
+});
+
+test('apply reads open activities once, not once per action', async () => {
+  const fake = makeFake(seed());
+  const r = await runAudit(fake);
+  const before = fake.calls.length;
+  await apply(client(fake, { readOnly: false }), r.plan, { execute: false });
+  const scans = fake.calls.slice(before).filter((c) => c.path === '/v1/activities' && c.method === 'GET');
+  assert.equal(scans.length, 1);
+});
+
+test('a failed task creation leaves the old activities in place', async () => {
+  const fake = makeFake(seed());
+  const r = await runAudit(fake);
+  const failing = async (href, init = {}) => (init.method === 'POST'
+    ? { ok: false, status: 400, json: async () => ({ success: false, error: 'bad request' }) }
+    : fake.fetchImpl(href, init));
+  const pd = new Pipedrive({ token: 't', fetchImpl: failing, sleep: async () => {}, readOnly: false });
+  const res = await apply(pd, r.plan, { execute: true });
+  assert.ok(res.some((x) => x.status === 'error'));
+  assert.equal(fake.db.activities.filter((a) => a.lead_id === L(5) && !a.done).length, 3);
+});
+
+test('fixing a phone keeps the person\'s other numbers', async () => {
+  const s = seed();
+  s.persons.find((p) => p.id === 103).phone.push({ value: '+55 31 3333-4444', label: 'work', primary: false });
+  const fake = makeFake(s);
+  const r = await runAudit(fake);
+  await apply(client(fake, { readOnly: false }), r.plan, { execute: true });
+  const phones = fake.db.persons.find((p) => p.id === 103).phone;
+  assert.deepEqual(phones.map((p) => p.value), ['+5531987654321', '+55 31 3333-4444']);
+  assert.equal(phones[0].primary, true);
+});
+
+test('an inconclusive or failing WhatsApp lookup never plans a deletion', async () => {
+  for (const lookup of [async () => 'unknown', async () => { throw new Error('HTTP 500'); }]) {
+    const fake = makeFake(seed());
+    const pd = client(fake);
+    const sc = await scope.byLabels(pd, { labels: ['Outbound Q4'], firstTouchSubject: 'WhatsApp Message', activityTypes: ['whatsapp_message'] });
+    const r = await audit(pd, sc.leads, cfg, opts, { hasWhatsApp: lookup });
+    for (const n of [1, 3, 9]) {
+      assert.ok(!actionsFor(r, n).includes('replace_open_activities_with_task'), `lead ${n}`);
+      assert.match(rec(r, n).review.join(' '), /inconclusive/);
+    }
+  }
+});
+
+test('WhatsApp lookups are paced', async () => {
+  const fake = makeFake(seed());
+  const pd = client(fake);
+  const sc = await scope.byLabels(pd, { labels: ['Outbound Q4'], firstTouchSubject: 'WhatsApp Message', activityTypes: ['whatsapp_message'] });
+  const waits = [];
+  let lookups = 0;
+  await audit(pd, sc.leads, cfg, { ...opts, whatsappDelayMs: 2000 }, {
+    hasWhatsApp: async (p) => { lookups++; return hasWhatsApp(p); },
+    sleep: async (ms) => { waits.push(ms); },
+  });
+  assert.ok(lookups > 1);
+  assert.equal(waits.length, lookups - 1);
+  assert.ok(waits.every((ms) => ms === 2000));
+});
+
+test('pagination stops on a cursor that does not advance', async () => {
+  const stuck = async () => ({ ok: true, status: 200, json: async () => ({ success: true, data: [{ id: 1 }], additional_data: { pagination: { more_items_in_collection: true } } }) });
+  const pd = new Pipedrive({ token: 't', fetchImpl: stuck, sleep: async () => {} });
+  await assert.rejects(pd.paginate('/v1/leads'), /next_start/);
+});

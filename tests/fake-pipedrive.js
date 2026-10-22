@@ -30,7 +30,10 @@ function makeFake(seed) {
     if (method === 'GET' && p === '/v1/activities') {
       const type = url.searchParams.get('type');
       const done = url.searchParams.get('done');
-      const items = db.activities.filter((a) => (!type || a.type === type) && (done === null || String(Number(a.done)) === done));
+      // Like the real API: without user_id=0 only the token owner's (user 1) activities come back.
+      const allUsers = url.searchParams.get('user_id') === '0';
+      const items = db.activities.filter((a) => (!type || a.type === type) && (done === null || String(Number(a.done)) === done)
+        && (allUsers || (a.user_id || 1) === 1));
       return json(200, page(items, url));
     }
     if (method === 'GET' && (m = p.match(/^\/v1\/persons\/(\d+)$/))) {

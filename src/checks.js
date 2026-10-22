@@ -13,7 +13,9 @@ function identityMatches(leadTitle, personName) {
   const a = normalizeName(leadTitle);
   const b = normalizeName(personName);
   if (!a || !b) return false;
-  return a === b || a.includes(b) || b.includes(a);
+  // Whole words only: "Ana" must not match "Mariana".
+  const pa = ` ${a} `, pb = ` ${b} `;
+  return a === b || pa.includes(pb) || pb.includes(pa);
 }
 
 // The message uses the PERSON's organization. When the lead points to one company

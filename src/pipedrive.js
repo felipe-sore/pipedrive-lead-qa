@@ -48,7 +48,9 @@ class Pipedrive {
       out.push(...(d.data || []));
       const p = (d.additional_data && d.additional_data.pagination) || {};
       if (!p.more_items_in_collection) return out;
-      start = p.next_start;
+      // A missing or non-advancing cursor would refetch the same page forever.
+      if (!(Number(p.next_start) > start)) throw new Error(`GET ${path}: pagination says more items but next_start is ${p.next_start}`);
+      start = Number(p.next_start);
     }
   }
 
@@ -56,8 +58,10 @@ class Pipedrive {
   // The leads endpoint cannot filter by label: load once, filter in memory.
   leads() { return this._leads || (this._leads = this.paginate('/v1/leads', {}, 100)); }
   // Same for activities: filters like person_id are ignored by the API, so we
-  // always filter by lead_id in memory.
-  openActivities(type) { return this.paginate('/v1/activities', { done: 0, type }, 500); }
+  // always filter by lead_id in memory. user_id=0 means every user's activities;
+  // without it the API returns only the token owner's, and leads owned by other
+  // reps would silently fall out of scope.
+  openActivities(type) { return this.paginate('/v1/activities', { done: 0, type, user_id: 0 }, 500); }
   person(id) { return this.request('GET', `/v1/persons/${id}`).then((d) => d.data); }
   organization(id) { return this.request('GET', `/v1/organizations/${id}`).then((d) => d.data); }
   search(entity, term, fields) {

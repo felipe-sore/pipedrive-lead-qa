@@ -61,7 +61,7 @@ async function runAudit(o) {
 
   const result = await audit(pd, sc.leads, cfg, {
     homeCountry: o.country, locationField: o.locationField, checkWhatsapp: Boolean(o.checkWhatsapp),
-    taskSubject: o.taskSubject, taskType: o.taskType,
+    taskSubject: o.taskSubject, taskType: o.taskType, whatsappDelayMs: whatsapp.delayMs(),
   }, { hasWhatsApp: whatsapp.configured() ? (p) => whatsapp.hasWhatsApp(p) : null });
 
   const out = o.out || 'qa-output';

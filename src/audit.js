@@ -11,16 +11,30 @@ function nextMonday(now = new Date()) {
   return d.toISOString().slice(0, 10);
 }
 
+// Wraps the gateway lookup: paced (bursts of lookups can get the gateway number
+// flagged) and never throwing (one failed lookup must not kill the whole audit).
+function pacedLookup(fn, delayMs = 0, sleep = (ms) => new Promise((r) => setTimeout(r, ms))) {
+  let first = true;
+  return async (e164) => {
+    if (!first && delayMs) await sleep(delayMs);
+    first = false;
+    try { return await fn(e164); } catch { return 'error'; }
+  };
+}
+
 /**
  * Read-only. Returns one record per lead (what was found) and a plan
  * (what would be written). Nothing is written here.
  *
- * opts: { homeCountry, locationField, checkWhatsapp, taskSubject, taskType, now }
- * adapters: { hasWhatsApp(e164) -> 'on_whatsapp' | 'not_on_whatsapp' | 'unknown' }
+ * opts: { homeCountry, locationField, checkWhatsapp, whatsappDelayMs, taskSubject, taskType, now }
+ * adapters: { hasWhatsApp(e164) -> 'on_whatsapp' | 'not_on_whatsapp' | 'unknown', sleep }
+ * Anything but a clear yes or no from the gateway is inconclusive: the lead goes
+ * to review and its activities are left alone.
  */
 async function audit(pd, leads, cfg, opts = {}, adapters = {}) {
   const home = (opts.homeCountry || 'BR').toUpperCase();
   const canCheckWa = Boolean(opts.checkWhatsapp && adapters.hasWhatsApp);
+  const hasWhatsApp = canCheckWa ? pacedLookup(adapters.hasWhatsApp, opts.whatsappDelayMs, adapters.sleep) : null;
   const persons = new Map();
   for (const id of new Set(leads.map((l) => l.person_id).filter(Boolean))) persons.set(id, await pd.person(id));
 
@@ -83,16 +97,19 @@ async function audit(pd, leads, cfg, opts = {}, adapters = {}) {
     findings.phone = ph.category;
     findings.whatsapp = 'not_checked';
     let reliable = false;
+    let inconclusive = false;
 
     if (ph.category === 'home' && canCheckWa) {
-      findings.whatsapp = await adapters.hasWhatsApp(ph.e164);
+      findings.whatsapp = await hasWhatsApp(ph.e164);
       reliable = findings.whatsapp === 'on_whatsapp';
+      inconclusive = !['on_whatsapp', 'not_on_whatsapp'].includes(findings.whatsapp);
     } else if (ph.category === 'home') {
       reliable = true; // no WhatsApp check configured: a valid number is the best we know
     } else if ((ph.category === 'foreign' || ph.category === 'invalid') && home === 'BR' && canCheckWa) {
       const location = opts.locationField ? person[opts.locationField] : '';
-      const rep = await tryRepair(r.phoneRaw, location, cfg.brAreaCodes, adapters.hasWhatsApp);
+      const rep = await tryRepair(r.phoneRaw, location, cfg.brAreaCodes, hasWhatsApp);
       findings.repair = rep.status;
+      inconclusive = rep.status === 'inconclusive';
       if (rep.status === 'confirmed' && !blocked) {
         reliable = true;
         findings.whatsapp = 'on_whatsapp';
@@ -102,7 +119,9 @@ async function audit(pd, leads, cfg, opts = {}, adapters = {}) {
       }
     }
 
-    if (!reliable && !blocked) {
+    if (inconclusive) {
+      review.push(`WhatsApp check inconclusive (${findings.repair === 'inconclusive' ? 'repair lookup failed' : findings.whatsapp}): activities left alone, check the gateway and run again`);
+    } else if (!reliable && !blocked) {
       r.actions.push({
         type: 'replace_open_activities_with_task', leadId: lead.id, personId: person.id, label,
         why: `no reliable phone (${findings.phone}${findings.repair ? ', repair ' + findings.repair : ''}${findings.whatsapp !== 'not_checked' ? ', WhatsApp ' + findings.whatsapp : ''})`,
@@ -119,4 +138,4 @@ async function audit(pd, leads, cfg, opts = {}, adapters = {}) {
   return { records, plan, apiCalls: pd.calls };
 }
 
-module.exports = { audit, nextMonday };
+module.exports = { audit, nextMonday, pacedLookup };

@@ -12,6 +12,7 @@ test('identity: tolerates the default " lead" suffix and accents', () => {
   assert.equal(c.identityMatches('Ana Souza', 'Ana Souza Lima'), true);
   assert.equal(c.identityMatches('Diego Rocha lead', 'Someone Else'), false);
   assert.equal(c.identityMatches('', 'Ana'), false);
+  assert.equal(c.identityMatches('Ana lead', 'Mariana Costa'), false);
 });
 
 test('organization: mismatch, missing on person, ok', () => {

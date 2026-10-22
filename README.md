@@ -84,6 +84,9 @@ Learned the hard way, handled in the code:
 - **Activity filters like `person_id` are ignored.** Filter by `lead_id` in memory.
 - **Leads have no changelog**, so "added this week" cannot be read reliably. An open first-touch activity is the reliable "not contacted yet" signal.
 - **429s happen** in batches; the client backs off and retries.
+- **`/v1/activities` returns only the token owner's activities** unless you pass `user_id=0`. Leads owned by other reps would silently drop out of scope.
+- **Create before you delete.** The replacement task is created first; if that fails, the lead keeps its old activities instead of ending up with none (and being archived by a "no pending activity" rule).
+- **A WhatsApp lookup that is not a clear yes or no is inconclusive**, never "no WhatsApp": the lead goes to review and its activities are left alone.
 
 ## Tests
 

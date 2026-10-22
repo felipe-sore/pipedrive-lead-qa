@@ -60,12 +60,17 @@ async function tryRepair(raw, location, table, hasWhatsApp) {
   const list = candidates(raw, table);
   if (!list.length) return { status: 'no_candidate' };
   const state = stateFromLocation(location, table);
+  let inconclusive = 0;
   for (const c of list) {
-    if ((await hasWhatsApp(c.e164)) !== 'on_whatsapp') continue;
+    const wa = await hasWhatsApp(c.e164);
+    if (wa !== 'on_whatsapp' && wa !== 'not_on_whatsapp') inconclusive++;
+    if (wa !== 'on_whatsapp') continue;
     if (!state) return { status: 'found_location_unknown', ...c };
     if (state !== c.state) return { status: 'found_location_mismatch', locationState: state, ...c };
     return { status: 'confirmed', ...c };
   }
+  // One lookup that failed means the right candidate may be the one we could not check.
+  if (inconclusive) return { status: 'inconclusive', tried: list.map((c) => c.e164) };
   return { status: 'not_on_whatsapp', tried: list.map((c) => c.e164) };
 }
 
